@@ -1,0 +1,27 @@
+idea:
+  title: Mapping Person Space Through Simple Likes and Dislikes
+  domain: nlp
+  hypothesis: 'The space of personas displayed by large language models (LLMs) is
+    likely low-rank and can be mapped by analyzing which sets of likes and dislikes
+    LLMs are willing to adopt with minimal training and which combinations feel incongruent
+    to the models. These preference patterns may be similar across different LLMs.
+
+    '
+  background:
+    description: 'LLMs have been known to display different personas. It seems likely
+      that the space of personas is low-rank. Can we start mapping out this space
+      by just looking at what sets of likes and dislikes LLMs are willing to take
+      on with relatively little training (set some arbitrary threshold of N tokens)
+      and which likes and dislikes feel incongruent to an LLM? Are these preferences
+      similar across LLMs?
+
+      '
+  metadata:
+    author: Ari Holtzman
+    source: IdeaHub
+    source_url: https://hypogenic.ai/ideahub/idea/5GdCcopu2ih1dgKmPXu5
+    idea_id: mapping_person_space_through_s_20260320_211916_123a4658
+    created_at: '2026-03-20T21:19:16.906615'
+    status: submitted
+    github_repo_name: person-space-mapping-claude
+    github_repo_url: https://github.com/Hypogenic-AI/person-space-mapping-claude
