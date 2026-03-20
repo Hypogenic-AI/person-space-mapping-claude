@@ -1,0 +1,8 @@
+PDF: papers/2602.15847_personality_traits_interfere_geometric.pdf
+Total pages: 9
+Pages per chunk: 3
+
+Chunks:
+  2602.15847_personality_traits_interfere_geometric_chunk_001.pdf: pages 1-3
+  2602.15847_personality_traits_interfere_geometric_chunk_002.pdf: pages 4-6
+  2602.15847_personality_traits_interfere_geometric_chunk_003.pdf: pages 7-9

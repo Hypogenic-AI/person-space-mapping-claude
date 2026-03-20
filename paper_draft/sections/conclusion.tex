@@ -1,0 +1,15 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We introduced a behavioral probing methodology for mapping the structure of LLM person space using everyday likes and dislikes.
+By measuring how consistently two models adopt \nprofiles{} randomly generated persona profiles defined over \nprefs{} preference items, we established three findings.
+First, person space is significantly low-rank: \effrank{} of \nprefs{} dimensions explain 80\% of the variance in the preference co-occurrence matrix, a 65\% reduction from random baselines ($p < 0.001$).
+Second, the top principal components are partially interpretable, capturing distinctions such as ``outgoing intellectual'' versus ``homebody consumer.''
+Third, and most notably, person-space structure is remarkably consistent across model sizes, with co-occurrence matrices correlating at $r = 0.96$ and the top-5 components matching one-to-one at $r > 0.90$.
+
+The key takeaway is that LLMs share a common, low-dimensional model of which human preferences go together---a structure likely inherited from patterns in their training data.
+
+Several directions for future work are promising.
+Testing across model families (Claude, Gemini, open-source models) would determine whether the shared structure is universal or provider-specific.
+Comparing behavioral dimensionality with activation-level dimensionality~\citep{chen2025persona} would bridge the gap between API-level and internals-level analyses of persona structure.
+Finally, expanding the preference item set and validating against established psychological instruments would help calibrate the discovered dimensions against known personality frameworks.

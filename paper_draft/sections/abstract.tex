@@ -1,0 +1,6 @@
+Large language models can adopt diverse personas when prompted, but the structure of the space of personas they can coherently maintain is poorly understood.
+We introduce a behavioral probing methodology that maps \emph{person space}---the manifold of coherent persona configurations---by measuring how consistently LLMs adopt profiles defined by everyday likes and dislikes.
+We construct \nprefs{} preference items across \ndomains{} domains and probe two models (\nano and \mini) with \nprofiles{} randomly generated persona profiles, measuring both behavioral congruence and self-rated coherence.
+Our analysis reveals that person space is significantly lower-dimensional than the full preference space: only \effrank{} of \nprefs{} dimensions are needed to explain 80\% of variance in the preference co-occurrence matrix, compared to 23.4 for random baselines ($p < 0.001$).
+More strikingly, person-space structure is nearly identical across models of different sizes: their co-occurrence matrices correlate at $r = 0.96$, and the top-5 principal components match one-to-one with correlations exceeding $0.90$.
+These findings suggest that LLMs share a common implicit model of which human preferences ``go together,'' with implications for efficient personalization, alignment, and understanding the biases embedded in persona representations.

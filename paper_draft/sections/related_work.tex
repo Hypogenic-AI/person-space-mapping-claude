@@ -1,0 +1,24 @@
+\section{Related Work}
+\label{sec:related}
+
+\para{Personality and steering vectors in LLMs.}
+A growing body of work identifies linear directions in LLM activation space that correspond to personality traits.
+\citet{chen2025persona} extract ``persona vectors'' via contrastive activation differences and show that projections onto these vectors correlate with trait expression ($r = 0.75$--$0.83$), while also revealing cross-trait correlations ($0.34$--$0.86$) that suggest a lower-dimensional latent structure.
+\citet{bhandari2026personality} demonstrate that Big Five steering vectors are non-orthogonal even after orthonormalization, with a dominant ``social desirability'' axis driving cross-trait interference.
+\citet{feng2026persona} show that persona vectors support scalar multiplication and addition, enabling compositional multi-trait control that matches supervised fine-tuning baselines.
+\citet{hoppe2026sliders} propose sequential adaptive steering to reduce this interference.
+These activation-level findings motivate our question---does the same low-dimensional structure emerge from purely behavioral measurements?
+
+\para{Low-rank structure in preferences.}
+Several works formalize the assumption that user preferences have low-rank structure.
+\citet{bose2025lore} decompose the user-preference matrix as $\mP = \mW \mR$, where $\mR$ is a low-rank reward basis and $\mW$ contains user-specific simplex weights, achieving 93.8\% accuracy with few-shot adaptation.
+\citet{wang2026proxies} show that population preference distributions can be spanned by a finite LLM ensemble, and \citet{kobalczyk2024fewshot} use neural processes for amortized inference of user-specific latent variables.
+\citet{li2025alignx} ground this structure in a 90-dimensional space derived from psychology.
+\citet{zhong2024multiparty} prove that a single reward function provably fails for heterogeneous preferences, motivating the shared-representation-plus-individual-rewards structure we empirically validate.
+Our work complements these approaches by establishing low-rank structure through behavioral probing rather than reward modeling.
+
+\para{Persona simulation and evaluation.}
+\citet{thakur2024personas} use LoRA adapters to capture user persona clusters from movie preferences, demonstrating that low-rank adapters suffice for behavioral variation.
+\citet{zollo2024personalllm} create a benchmark showing that persona prompting produces preferences only half as diverse as real user populations, highlighting the gap between prompted and genuine preference diversity.
+Critically, \citet{han2025illusion} find that self-reported personality traits do not reliably predict LLM behavior ($\sim$24\% of trait-task associations significant), cautioning against reliance on questionnaire-based measurement.
+We address this concern by measuring behavioral congruence---consistency of actions with assigned preferences---rather than self-report.

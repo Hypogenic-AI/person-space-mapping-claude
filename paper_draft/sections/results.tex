@@ -1,0 +1,129 @@
+\section{Results}
+\label{sec:results}
+
+\subsection{Congruence Varies Across Profiles}
+\label{sec:congruence_results}
+
+Not all persona profiles are equally easy for LLMs to adopt.
+\Tabref{tab:congruence} summarizes congruence statistics across models.
+\mini achieves higher scores overall (mean combined congruence 0.896 vs.\ 0.772), consistent with its greater model capacity, but both models show significant variance across profiles.
+A Kolmogorov-Smirnov test rejects the null hypothesis of uniform congruence for both models ($p < 10^{-12}$).
+
+\begin{table}[t]
+    \centering
+    \caption{Congruence statistics across \nprofiles{} persona profiles. \mini achieves higher scores but both models show significant variance, confirming that some preference combinations are harder to adopt.}
+    \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        \textbf{Model} & \textbf{Behavioral} & \textbf{Coherence} & \textbf{Combined} & \textbf{CV (\%)} \\
+        \midrule
+        \nano & $0.892 \pm 0.022$ & $0.653 \pm 0.075$ & $0.772 \pm 0.043$ & 5.6 \\
+        \mini & $0.987 \pm 0.019$ & $0.805 \pm 0.050$ & $0.896 \pm 0.030$ & 3.3 \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:congruence}
+\end{table}
+
+Behavioral and coherence scores correlate moderately ($r = 0.41$ for \nano, $r = 0.33$ for \mini, both $p < 0.001$), indicating that the model's own assessment of preference coherence partially predicts its behavioral consistency, though the two measures capture distinct aspects of persona adoption.
+
+\subsection{Person Space Is Low-Rank}
+\label{sec:lowrank}
+
+\Tabref{tab:dimensionality} presents the dimensionality analysis of the co-occurrence matrices.
+Both models require only \effrank{} components to explain 80\% of variance---significantly fewer than the 23.4 expected under a random baseline ($p < 0.001$ via permutation test with 1,000 iterations).
+The participation ratio confirms this finding: 23.9--24.1 effective dimensions versus 29.6 for random matrices.
+
+\begin{table}[t]
+    \centering
+    \caption{Effective dimensionality of the preference co-occurrence matrix. Both models show significantly lower dimensionality than random baselines, with identical rank at every threshold. Best (lowest rank) results in \textbf{bold}.}
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Metric} & \textbf{\nano} & \textbf{\mini} & \textbf{Random} \\
+        \midrule
+        Rank for 80\% variance & \textbf{21} & \textbf{21} & $23.4 \pm 0.5$ \\
+        Rank for 90\% variance & \textbf{28} & \textbf{28} & --- \\
+        Rank for 95\% variance & \textbf{34} & \textbf{34} & --- \\
+        Participation ratio & \textbf{23.9} & \textbf{24.1} & $29.6 \pm 0.5$ \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:dimensionality}
+\end{table}
+
+The top 10 components capture approximately 55\% of variance, compared to roughly 34\% for random matrices.
+This 65\% reduction in effective dimensionality means that the space of coherent personas is substantially more constrained than what random preference combinations would predict.
+
+\subsection{Components Are Partially Interpretable}
+\label{sec:components}
+
+We examine the loading patterns of the top principal components.
+
+\para{Component 1} (9.2--9.3\% variance) distinguishes an ``outgoing intellectual'' pole (high loadings on public speaking, international travel, data/statistics) from a ``homebody consumer'' pole (road trips, social media, morning routines).
+
+\para{Component 2} (7.8\% variance) separates ``creative/artistic'' preferences (stand-up comedy, concerts, musical instruments) from ``traditional/team-oriented'' preferences (tradition, working in teams).
+
+\para{Components 3--4} (5.9--6.4\% variance) load on food and lifestyle preferences (hosting, vegetarianism, multitasking) versus analytical preferences (puzzles, coffee, classical music).
+
+\para{Component 5} ($\sim$4.7\% variance) contrasts privacy and minimalism with technology enthusiasm.
+
+These components partially align with known personality dimensions but do not map cleanly onto Big Five traits, consistent with the entanglement findings of \citet{bhandari2026personality}.
+
+\subsection{Person Space Is Consistent Across Models}
+\label{sec:crossmodel_results}
+
+This is our strongest finding.
+\Tabref{tab:crossmodel} presents the cross-model comparison metrics.
+The co-occurrence matrices correlate at $r = 0.96$ ($p < 10^{-15}$), and the Mantel permutation test confirms this is not due to shared marginal distributions ($p < 0.001$).
+The Procrustes disparity for the top-5 components is only 0.091, indicating near-perfect alignment after rotation.
+
+\begin{table}[t]
+    \centering
+    \caption{Cross-model comparison between \nano and \mini. The co-occurrence matrices and principal components are highly aligned, indicating shared person-space structure across model sizes.}
+    \begin{tabular}{@{}lcc@{}}
+        \toprule
+        \textbf{Metric} & \textbf{Value} & \textbf{$p$-value} \\
+        \midrule
+        Profile congruence correlation & $r = 0.44$ & $5.2 \times 10^{-7}$ \\
+        Co-occurrence matrix correlation & $\mathbf{r = 0.96}$ & $< 10^{-15}$ \\
+        Mantel permutation test & --- & $< 0.001$ \\
+        Procrustes disparity (top-5) & $\mathbf{0.091}$ & --- \\
+        Procrustes disparity (top-10) & $\mathbf{0.070}$ & --- \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:crossmodel}
+\end{table}
+
+\Tabref{tab:component_matching} shows that the top-5 components match one-to-one between models, with correlations exceeding 0.90 in all cases.
+Components 3 and 4 swap in their variance ordering between models, but their content is preserved---suggesting that these dimensions capture genuine structure rather than noise.
+
+\begin{table}[t]
+    \centering
+    \caption{Cross-correlation of top-5 principal components between \nano and \mini. Each \nano component matches a unique \mini component at $r > 0.90$, with components 3 and 4 swapped in ordering.}
+    \begin{tabular}{@{}ccc@{}}
+        \toprule
+        \textbf{\nano Component} & \textbf{Best-Matching \mini Component} & \textbf{Correlation} \\
+        \midrule
+        1 & 1 & $\mathbf{0.972}$ \\
+        2 & 2 & $\mathbf{0.946}$ \\
+        3 & 4 & $\mathbf{0.912}$ \\
+        4 & 3 & $\mathbf{0.929}$ \\
+        5 & 5 & $\mathbf{0.901}$ \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:component_matching}
+\end{table}
+
+\subsection{Polarity Effects}
+\label{sec:polarity}
+
+We observe an asymmetric polarity effect.
+For \mini, profiles with more ``like'' preferences achieve higher congruence ($r = 0.31$, $p < 0.001$), suggesting a positivity bias---the model more easily adopts positive preferences than negative ones.
+\nano shows no such effect ($r = 0.09$, $p = 0.32$).
+Domain diversity (number of distinct domains in a profile) does not predict congruence for either model, indicating that the low-rank structure is driven by preference interactions rather than domain coverage.
+
+\subsection{Error Analysis}
+\label{sec:errors}
+
+The lowest-congruence profiles tend to contain internally contradictory preferences.
+For example, a \nano profile scoring 0.59 combined ``enjoys multitasking'' and ``dreads public speaking'' with ``loves working in teams''---combining team orientation with avoidance of public engagement.
+Another low-scoring profile paired ``loves large gatherings'' with ``prefers listening alone,'' contradicting the social-solo dimension.
+Conversely, the highest-scoring profiles exhibit stereotypically consistent themes (\eg ``prefers cooperation; dreads public speaking; prefers traveling with companions'' forms a coherent ``quiet, cooperative'' persona).
+This pattern confirms that person space has genuine structure: profiles near the low-dimensional manifold are adopted fluently, while those far from it produce inconsistent behavior.

@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "stages": {
+    "resource_finder": {
+      "success": true,
+      "completion_marker": "/workspaces/person-space-mapping-claude/.resource_finder_complete",
+      "outputs": {
+        "literature_review": "/workspaces/person-space-mapping-claude/literature_review.md",
+        "resources_catalog": "/workspaces/person-space-mapping-claude/resources.md",
+        "papers_dir": "/workspaces/person-space-mapping-claude/papers",
+        "datasets_dir": "/workspaces/person-space-mapping-claude/datasets",
+        "code_dir": "/workspaces/person-space-mapping-claude/code"
+      },
+      "log_file": "/workspaces/person-space-mapping-claude/logs/resource_finder_claude.log",
+      "transcript_file": "/workspaces/person-space-mapping-claude/logs/resource_finder_claude_transcript.jsonl",
+      "elapsed_time": 2282.146056175232
+    },
+    "experiment_runner": {
+      "success": true,
+      "return_code": 0,
+      "elapsed_time": 5415.260470867157,
+      "log_file": "/workspaces/person-space-mapping-claude/logs/execution_claude.log",
+      "transcript_file": "/workspaces/person-space-mapping-claude/logs/execution_claude_transcript.jsonl"
+    }
+  },
+  "work_dir": "/workspaces/person-space-mapping-claude"
+}

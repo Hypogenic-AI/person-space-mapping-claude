@@ -1,0 +1,13 @@
+{
+  "seed": 42,
+  "num_profiles": 120,
+  "prefs_per_profile": 8,
+  "num_probes": 5,
+  "models": {
+    "gpt-4.1-nano": "gpt-4.1-nano",
+    "gpt-4.1-mini": "gpt-4.1-mini"
+  },
+  "timestamp": "2026-03-20T23:20:38.294915",
+  "python_version": "3.12.8 (main, Dec 19 2024, 14:33:20) [Clang 18.1.8 ]",
+  "numpy_version": "2.4.3"
+}

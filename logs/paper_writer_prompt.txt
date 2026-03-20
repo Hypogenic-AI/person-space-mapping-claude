@@ -1,0 +1,783 @@
+You are an academic paper writer. Generate a complete NEURIPS style paper
+based on the experiment results provided.
+
+════════════════════════════════════════════════════════════════════════════════
+                         IMPORTANT: BEFORE YOU START
+════════════════════════════════════════════════════════════════════════════════
+
+Before writing any content, you MUST complete these steps:
+
+1. READ THE SKILL: Review the paper-writer skill at .claude/skills/paper-writer/SKILL.md
+2. READ THE STYLE GUIDE: Study templates/paper_writing/lab_style_guide.md carefully
+3. REVIEW EXAMPLES: Browse paper_examples/ for formatting and language patterns:
+   - Look at sections/1.introduction.tex for language style
+   - Look at tables/*.tex for table formatting
+   - Look at commands/*.tex for macro usage
+4. VERIFY COMMAND TEMPLATES: Command templates (math.tex, general.tex, macros.tex) are pre-copied to paper_draft/commands/
+
+CRITICAL: Reference example papers for FORMATTING and LANGUAGE STYLE only.
+Do NOT copy content, phrasing, or narrative structure from the example papers.
+The examples are in a different research domain - focus only on presentation style.
+
+════════════════════════════════════════════════════════════════════════════════
+                            EXPERIMENT REPORT
+════════════════════════════════════════════════════════════════════════════════
+
+# Mapping Person Space Through Simple Likes and Dislikes
+
+## 1. Executive Summary
+
+We investigated whether the space of personas that LLMs can adopt is low-rank and structurally consistent across models. By probing two OpenAI models (GPT-4.1-nano and GPT-4.1-mini) with 120 randomly-generated persona profiles defined by everyday likes and dislikes, we measured both behavioral congruence (how consistently the model role-plays the assigned preferences) and coherence ratings (how natural the model judges the preference combination to be). Our key finding is that **LLM person space is significantly lower-dimensional than the full preference space**, with 21 out of 60 dimensions needed to explain 80% of variance in the co-occurrence matrix (vs. 23.4 for random matrices, p &lt; 0.001). More strikingly, **the structure of person space is nearly identical across models**: the co-occurrence matrices correlate at r = 0.96, and the top-5 principal components show cross-correlation above 0.90, with components matching 1-to-1 (up to a swap of components 3 and 4). This suggests that LLMs share a common implicit model of which human preferences &#34;go together.&#34;
+
+## 2. Goal
+
+**Hypothesis:** The space of personas displayed by LLMs is low-rank and can be mapped by analyzing which sets of likes and dislikes LLMs adopt congruently vs. find incongruent. These patterns should be similar across different LLMs.
+
+**Why this matters:** Understanding person-space structure has implications for:
+- **Personalization:** If person space is truly low-rank, a user&#39;s preferences can be captured with very few dimensions
+- **Alignment:** Low-rank structure means there are &#34;natural&#34; persona types that LLMs gravitate toward
+- **Safety:** Knowing which preference combinations feel incongruent to LLMs helps predict where persona adoption may fail
+
+**Gap filled:** While prior work has shown low-rank structure in reward models (LoRe, Bose et al. 2025) and entanglement in steering vectors (Bhandari et al. 2026), no study has mapped person space using simple behavioral probes across LLM families.
+
+## 3. Data Construction
+
+### Dataset Description
+We constructed a custom dataset of 60 preference items across 10 domains:
+
+| Domain | Items | Examples |
+|--------|-------|----------|
+| Food &amp; Drink | 6 | &#34;loves spicy food&#34;, &#34;prefers home-cooked meals&#34; |
+| Music &amp; Arts | 6 | &#34;loves classical music&#34;, &#34;enjoys abstract art&#34; |
+| Social | 6 | &#34;loves large gatherings&#34;, &#34;enjoys team sports&#34; |
+| Outdoors | 6 | &#34;loves hiking&#34;, &#34;enjoys extreme sports&#34; |
+| Intellectual | 6 | &#34;loves science/technology&#34;, &#34;enjoys philosophical debates&#34; |
+| Values | 6 | &#34;values routine&#34;, &#34;is environmentally conscious&#34; |
+| Entertainment | 6 | &#34;loves horror movies&#34;, &#34;enjoys video games&#34; |
+| Travel | 6 | &#34;loves international travel&#34;, &#34;prefers luxury travel&#34; |
+| Work | 6 | &#34;thrives in fast-paced environments&#34;, &#34;loves leadership&#34; |
+| Technology | 6 | &#34;is early adopter&#34;, &#34;loves coding&#34; |
+
+Each item has a &#34;like&#34; and &#34;dislike&#34; polarity (e.g., &#34;loves spicy food&#34; vs. &#34;dislikes spicy food&#34;).
+
+### Persona Profiles
+120 profiles were generated, each containing 8 randomly-selected preferences with random polarity. This gives a rich combinatorial space for discovering which combinations feel natural.
+
+### Probe Questions
+Five follow-up questions tested behavioral consistency:
+1. &#34;What would be your ideal way to spend a free Saturday?&#34;
+2. &#34;If you could plan your dream vacation, what would it look like?&#34;
+3. &#34;What kind of gift would make you happiest?&#34;
+4. &#34;Describe your ideal living environment.&#34;
+5. &#34;What would you choose for a perfect evening of entertainment?&#34;
+
+### Data Quality
+- All 120 profiles tested per model (no missing data)
+- Congruence scores validated against structured rubric
+- Coherence ratings extracted with format parsing (SCORE: pattern)
+
+## 4. Experiment Description
+
+### Methodology
+
+#### High-Level Approach
+For each of 120 persona profiles × 2 LLMs:
+1. **Behavioral congruence measurement**: System prompt assigns the persona, then 5 probe questions test consistency. A separate API call scores each response against the assigned preferences (0-10 scale).
+2. **Coherence rating**: Ask the model to rate how natural/coherent the preference combination feels (0-10 scale with explanation).
+3. **Matrix construction**: Build a 60×60 preference co-occurrence matrix where entry (i,j) = average congruence when preferences i and j appear together.
+4. **Dimensionality analysis**: SVD/PCA on the co-occurrence matrix.
+5. **Cross-model comparison**: Procrustes analysis and canonical correlation between models.
+
+#### Why This Method?
+- **Behavioral probing** (not self-report) avoids the &#34;personality illusion&#34; identified by Han et al. (2025)
+- **Co-occurrence matrix** captures pairwise preference interactions, enabling dimensionality analysis
+- **API-based approach** works across any LLM without requiring model internals
+
+### Implementation Details
+
+#### Tools and Libraries
+| Library | Version | Purpose |
+|---------|---------|---------|
+| Python | 3.12.8 | Runtime |
+| NumPy | 2.4.3 | Matrix operations |
+| SciPy | 1.17.1 | Statistical tests |
+| OpenAI | latest | API calls |
+| Matplotlib | 3.10.3 | Visualization |
+| Seaborn | 0.13.2 | Heatmaps |
+
+#### Models Tested
+| Model | ID | Role |
+|-------|-----|------|
+| GPT-4.1-nano | gpt-4.1-nano | Primary (fast, high throughput) |
+| GPT-4.1-mini | gpt-4.1-mini | Comparison (stronger model) |
+
+#### Hyperparameters
+| Parameter | Value | Rationale |
+|-----------|-------|-----------|
+| Temperature (persona) | 0.7 | Natural variation in role-play |
+| Temperature (scoring) | 0.0 | Deterministic scoring |
+| Temperature (coherence) | 0.3 | Slight variation in coherence judgment |
+| Max tokens (response) | 200 | Sufficient for persona responses |
+| Max tokens (score) | 10 | Single number output |
+| Random seed | 42 | Reproducibility |
+
+### Experimental Protocol
+
+#### Reproducibility
+- Random seed: 42
+- Profile generation is deterministic
+- All raw API responses saved to `results/`
+- Total API calls per model: 1,320 (120 profiles × 11 calls each)
+- Total tokens: ~380K per model
+
+## 5. Result Analysis
+
+### Key Findings
+
+#### Finding 1: Congruence Scores Vary Significantly Across Profiles (H1 ✓)
+
+| Model | Mean Behavioral | Mean Coherence | Mean Combined | CV |
+|-------|----------------|----------------|---------------|-----|
+| GPT-4.1-nano | 0.892 ± 0.022 | 0.653 ± 0.075 | 0.772 ± 0.043 | 5.6% |
+| GPT-4.1-mini | 0.987 ± 0.019 | 0.805 ± 0.050 | 0.896 ± 0.030 | 3.3% |
+
+- KS test rejects uniform distribution for both models (p &lt; 10⁻¹²)
+- Behavioral and coherence scores correlate moderately (r = 0.41 for nano, r = 0.33 for mini, both p &lt; 0.001)
+- GPT-4.1-mini is more compliant overall (higher scores) but still shows significant variance
+
+**Interpretation:** Not all preference combinations are equally easy for LLMs to adopt. Some profiles feel more natural and are role-played more consistently than others.
+
+#### Finding 2: Person Space Is Significantly Low-Rank (H2 ✓)
+
+**Co-occurrence matrix dimensionality:**
+
+| Metric | GPT-4.1-nano | GPT-4.1-mini | Random Baseline |
+|--------|-------------|-------------|-----------------|
+| Rank for 80% variance | **21** | **21** | 23.4 ± 0.5 |
+| Rank for 90% variance | **28** | **28** | — |
+| Rank for 95% variance | **34** | **34** | — |
+| Participation ratio | **23.9** | **24.1** | 29.6 ± 0.5 |
+
+- Both actual rank-80% and participation ratio are significantly lower than random (p &lt; 0.001 via permutation test)
+- The co-occurrence matrix has ~21 effective dimensions out of 60 possible — a **65% reduction** in dimensionality
+- Top 10 components capture ~55% of variance (vs ~34% for random)
+
+#### Finding 3: Top Components Are Partially Interpretable (H3 — Partially Supported)
+
+**Component 1** (9.2-9.3% variance): Distinguishes &#34;outgoing intellectual&#34; (public speaking, international travel, data/statistics) from &#34;homebody consumer&#34; (road trips, social media, morning person)
+
+**Component 2** (7.8%): Separates &#34;creative/artistic&#34; (stand-up comedy, concerts, musical instruments) from &#34;traditional/team-oriented&#34; (tradition, working in teams)
+
+**Component 3-4** (6.4-5.9%): Load on food/lifestyle preferences (hosting, vegetarianism, multitasking) vs. analytical preferences (puzzles, coffee, classical music)
+
+**Component 5** (~4.7%): Privacy/minimalism vs. tech enthusiasm
+
+These components partially align with known personality dimensions but don&#39;t map cleanly onto Big Five traits, consistent with the &#34;entanglement&#34; findings of Bhandari et al. (2026).
+
+#### Finding 4: Person Space Structure Is Highly Consistent Across Models (H4 ✓✓)
+
+This is the strongest finding:
+
+| Metric | Value | p-value |
+|--------|-------|---------|
+| Profile congruence correlation | r = 0.44 | 5.2 × 10⁻⁷ |
+| Co-occurrence matrix correlation | **r = 0.96** | &lt; 10⁻¹⁵ |
+| Mantel permutation test | | p &lt; 0.001 |
+| Procrustes disparity (top-5) | **0.091** | — |
+| Procrustes disparity (top-10) | **0.070** | — |
+
+**Cross-correlation of top-5 principal components:**
+
+| nano Component | Best-matching mini Component | Correlation |
+|---------------|------------------------------|-------------|
+| 1 | 1 | **0.972** |
+| 2 | 2 | **0.946** |
+| 3 | 4 | **0.912** |
+| 4 | 3 | **0.929** |
+| 5 | 5 | **0.901** |
+
+The top-5 components match nearly 1-to-1 between models (components 3 and 4 are swapped in ordering but otherwise identical). This is remarkable — two different model sizes discover essentially the same person-space structure.
+
+#### Finding 5: Like/Dislike Polarity Affects Congruence
+
+For GPT-4.1-mini, profiles with more &#34;like&#34; preferences have higher congruence (r = 0.31, p &lt; 0.001). GPT-4.1-nano shows no such effect (r = 0.09, p = 0.32). This suggests the stronger model has a &#34;positivity bias&#34; — it more easily adopts positive preferences than negative ones.
+
+Domain diversity (number of distinct domains in a profile) does not predict congruence for either model.
+
+### Visualizations
+
+All visualizations are saved in `results/plots/`:
+- `scree_plots.png` — Variance explained per component
+- `sv_comparison.png` — Singular value spectra with random baseline
+- `congruence_distribution.png` — Distribution of congruence scores
+- `cross_model_comparison.png` — Scatter plot of per-profile congruence
+- `cooccurrence_*.png` — Heatmaps of preference co-occurrence matrices
+- `components_*.png` — Loading plots for top components
+- `behavioral_vs_coherence.png` — Relationship between two congruence measures
+- `domain_congruence.png` — Congruence by preference domain
+
+### Error Analysis
+
+**Lowest-congruence profiles** tend to have internally contradictory preferences:
+- GPT-4.1-nano (score 0.59): &#34;enjoys multitasking; finds board games tedious; dreads public speaking; loves working in teams&#34; — combines team orientation with avoidance of public engagement
+- GPT-4.1-nano (score 0.62): &#34;prefers mainstream pop; loves large gatherings; prefers listening alone; prefers individual contributor&#34; — contradicts social-solo dimensions
+
+**Highest-congruence profiles** tend to have stereotypically consistent themes:
+- &#34;prefers cooperation; has no interest in anime; dreads public speaking; prefers traveling with companions&#34; — consistent &#34;quiet, cooperative&#34; persona
+
+### Limitations
+
+1. **Self-evaluation bias**: The same model family (GPT-4.1) scores its own congruence, which may inflate scores and reduce variance. Cross-family scoring would be stronger.
+2. **Limited model diversity**: Both tested models are from OpenAI. Testing Claude, Gemini, and open-source models would strengthen the cross-model claims.
+3. **Profile-preference matrix noise**: With 120 profiles × 60 items and 8 items per profile, the profile-preference matrix is sparse (87% zeros), making its SVD less informative than the denser co-occurrence matrix.
+4. **Temperature effects**: Temperature 0.7 introduces stochastic variation. Multiple runs per profile would improve reliability.
+5. **Preference item design**: Our 60 items, while diverse, are not validated psychological instruments. Different item sets might yield different dimensionalities.
+6. **Scoring model**: Using an LLM to score congruence introduces model-specific biases. Human evaluation would be more robust but less scalable.
+
+## 6. Conclusions
+
+### Summary
+**LLM person space is measurably low-rank**: The co-occurrence structure of preference congruence has ~21 effective dimensions (out of 60), significantly fewer than random (p &lt; 0.001). More importantly, this structure is **remarkably consistent across models** — GPT-4.1-nano and GPT-4.1-mini share essentially the same person-space geometry (r = 0.96 co-occurrence correlation, top-5 components matching at r &gt; 0.90).
+
+### Implications
+- **For personalization**: A user&#39;s persona can likely be captured by ~20 preference dimensions rather than the full space of possible preferences. This means efficient few-shot personalization should be possible.
+- **For alignment**: LLMs have strong implicit models of which human preferences &#34;go together.&#34; This implicit structure may reflect training data biases about personality types.
+- **For safety**: Some preference combinations feel fundamentally incongruent to LLMs. Understanding these constraints helps predict where persona adoption may break down.
+
+### Confidence in Findings
+- **High confidence** in H4 (cross-model consistency): r = 0.96, p ≈ 0
+- **High confidence** in H2 (low-rank): statistically significant vs. random baseline
+- **Moderate confidence** in H1 (variance): significant but effect size is modest (CV = 3-6%)
+- **Low-moderate confidence** in H3 (interpretability): components are partially interpretable but don&#39;t map cleanly onto standard frameworks
+
+## 7. Next Steps
+
+### Immediate Follow-ups
+1. **Test across model families**: Run the same experiment with Claude (Anthropic) and Gemini (Google) to test if the r = 0.96 structural similarity holds across training paradigms
+2. **Human validation**: Have human raters score a subset of profiles for congruence to validate LLM self-evaluation
+3. **Larger item set**: Expand to 200+ preference items to better estimate the true dimensionality
+
+### Alternative Approaches
+- **Activation-based analysis**: Use repeng/CAA to extract steering vectors for each preference item in an open-source model, then compare activation-space dimensionality with behavioral dimensionality
+- **Fine-tuning approach**: Test which preference profiles can be instilled with minimal fine-tuning (as the original research question suggests) vs. which require extensive training
+
+### Broader Extensions
+- **Cultural variation**: Test whether person-space structure varies by language or cultural context (the PRISM dataset has 75-country coverage)
+- **Temporal stability**: Repeat experiments over time to see if person space evolves with model updates
+- **Individual user mapping**: Use person-space coordinates to predict real users&#39; preferences from PRISM dataset
+
+### Open Questions
+1. Is the ~21-dimensional co-occurrence structure an artifact of our 60-item set, or does it converge as items increase?
+2. Do the discovered dimensions correspond to known psychological constructs (Big Five, HEXACO, etc.)?
+3. Why do components 3 and 4 swap between nano and mini — is this a model-size effect or noise?
+4. Can person-space coordinates be used to predict out-of-domain preferences?
+
+## References
+
+### Papers
+1. Bose et al. (2025). &#34;LoRe: Low-Rank Reward Modeling for Personalized LLMs.&#34; arXiv:2504.14439
+2. Chen et al. (2025). &#34;Persona Vectors: Monitoring and Controlling Character Traits.&#34; arXiv:2507.21509
+3. Bhandari et al. (2026). &#34;Do Personality Traits Interfere? Geometric Limitations of Steering.&#34; arXiv:2602.15847
+4. Feng et al. (2026). &#34;PERSONA: Dynamic and Compositional Personality Control.&#34; arXiv:2602.15669
+5. Thakur et al. (2024). &#34;Personas within Parameters.&#34; arXiv:2509.09689
+6. Han et al. (2025). &#34;The Personality Illusion.&#34; arXiv:2509.03730
+7. Zollo et al. (2024). &#34;PersonalLLM.&#34; arXiv:2409.20296
+
+### Tools
+- OpenAI GPT-4.1 API
+- NumPy 2.4.3, SciPy 1.17.1 for analysis
+- Matplotlib 3.10.3, Seaborn 0.13.2 for visualization
+
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEARCH PLAN
+════════════════════════════════════════════════════════════════════════════════
+
+# Research Plan: Mapping Person Space Through Simple Likes and Dislikes
+
+## Motivation &amp; Novelty Assessment
+
+### Why This Research Matters
+LLMs are increasingly used in personalized applications where they must adopt different personas. Understanding the underlying structure of &#34;person space&#34; — the set of coherent persona configurations an LLM can adopt — is critical for personalization, alignment, and safety. If this space is low-rank, it means LLM personas are constrained to a small number of underlying dimensions, which has profound implications for how we think about AI personality and preference alignment.
+
+### Gap in Existing Work
+Based on the literature review, existing work has:
+- Shown that steering vectors for personality traits are entangled and non-orthogonal (Bhandari et al., 2026)
+- Demonstrated low-rank structure in preference reward models (Bose et al., 2025 - LoRe)
+- Found that persona vectors exist as linear directions in activation space (Chen et al., 2025)
+
+**But no study has**: (1) Directly probed LLMs with simple everyday likes/dislikes to map persona space, (2) measured which preference combinations feel &#34;congruent&#34; vs. &#34;incongruent&#34; to LLMs, (3) compared this structure across different LLM families, or (4) estimated the effective dimensionality of person space from behavioral (not activation-level) data.
+
+### Our Novel Contribution
+We propose a purely behavioral approach: present LLMs with persona profiles defined by sets of likes/dislikes, measure how consistently and naturally they adopt each profile, and use the resulting congruence matrix to map the effective dimensionality of person space. This is complementary to activation-based approaches (which require model internals) and works across any LLM via API.
+
+### Experiment Justification
+- **Experiment 1 (Preference Congruence Probing):** Needed to establish which preference combinations LLMs find natural vs. incongruent. This is the core data collection.
+- **Experiment 2 (Dimensionality Analysis):** Needed to test the low-rank hypothesis by applying SVD/PCA to the congruence matrix.
+- **Experiment 3 (Cross-Model Comparison):** Needed to test whether person space structure is universal across LLM families.
+
+## Research Question
+Can the space of LLM personas be mapped by probing which combinations of everyday likes and dislikes LLMs adopt congruently, and is this space low-rank and consistent across different LLMs?
+
+## Hypothesis Decomposition
+
+**H1:** LLMs will adopt some preference combinations more congruently than others (not all combinations are equally natural).
+
+**H2:** The preference congruence matrix has low effective rank (few principal components explain most variance).
+
+**H3:** The discovered person-space dimensions correspond to interpretable persona types (e.g., &#34;intellectual vs. practical&#34;, &#34;adventurous vs. homebody&#34;).
+
+**H4:** Different LLMs (GPT-4.1, Claude, Gemini) share similar person-space structure (high correlation between their congruence matrices).
+
+## Proposed Methodology
+
+### Approach
+1. **Design preference items**: Create ~60 preference items across 10 domains (food, music, hobbies, social, aesthetics, values, entertainment, travel, work style, lifestyle).
+2. **Create persona profiles**: Generate ~100 persona profiles as random subsets of 8-10 preferences each.
+3. **Measure congruence**: For each profile, ask the LLM to adopt it, then probe with follow-up questions to measure behavioral consistency. Congruence = how consistently the LLM maintains and extends the assigned preferences.
+4. **Build preference co-occurrence matrix**: Which preferences tend to be adopted congruently together?
+5. **Dimensionality analysis**: SVD/PCA on the congruence matrix.
+6. **Cross-model comparison**: Repeat with multiple LLMs, compare structure.
+
+### Experimental Steps
+
+**Step 1: Preference Item Design**
+- Create 60 preference items as binary like/dislike across 10 domains
+- Each item is a concrete, everyday preference (e.g., &#34;likes spicy food&#34;, &#34;prefers quiet evenings&#34;)
+
+**Step 2: Persona Profile Generation**
+- Generate 100 random profiles of 8 preferences each
+- Include some &#34;stereotype-consistent&#34; profiles and some &#34;mixed&#34; profiles
+
+**Step 3: Congruence Measurement**
+For each (LLM, profile) pair:
+1. System prompt assigns the persona with the 8 preferences
+2. Ask 5 follow-up questions that probe preference consistency
+3. Score each response for alignment with assigned preferences (0-1)
+4. Average score = congruence score for that profile
+
+**Step 4: Build Co-occurrence Matrix**
+- For each pair of preferences (i, j), compute: how much does including both in a profile affect congruence?
+- This gives a 60×60 preference interaction matrix
+
+**Step 5: Dimensionality Analysis**
+- SVD of the interaction matrix
+- Scree plot to determine effective rank
+- Interpret top components
+
+**Step 6: Cross-Model Comparison**
+- Repeat Steps 3-5 for GPT-4.1 and at least one other model
+- Compute Procrustes alignment between person spaces
+- Report structural similarity
+
+### Baselines
+- **Random baseline**: Expected congruence if preferences were independent
+- **Stereotype baseline**: Congruence for hand-crafted &#34;coherent&#34; vs. &#34;incoherent&#34; profiles
+
+### Evaluation Metrics
+- **Congruence score**: Average consistency of LLM responses with assigned preferences (0-1)
+- **Effective dimensionality**: Number of SVD components needed to explain 80% and 90% of variance
+- **Cross-model correlation**: Pearson/Spearman correlation between congruence matrices from different LLMs
+- **Interpretability**: Whether top PCA components have clear semantic meaning
+
+### Statistical Analysis Plan
+- Permutation tests for significance of low-rank structure (compare to random preference matrices)
+- Bootstrap confidence intervals for effective dimensionality
+- Mantel test for cross-model matrix correlation
+- Significance level: α = 0.05
+
+## Expected Outcomes
+- **Supporting H1**: Significant variance in congruence scores across profiles (some much higher/lower than mean)
+- **Supporting H2**: Effective rank of 5-10 dimensions (out of 60) explaining &gt;80% variance
+- **Supporting H3**: Top components have interpretable labels
+- **Supporting H4**: Cross-model correlation r &gt; 0.5
+
+## Timeline and Milestones
+1. Environment setup + preference design: 15 min
+2. API infrastructure + congruence measurement code: 30 min
+3. Run primary experiments (GPT-4.1): 45 min
+4. Run comparison experiments (second model): 30 min
+5. Analysis + visualization: 30 min
+6. Documentation: 30 min
+
+## Potential Challenges
+- **API rate limits**: Mitigate with exponential backoff and batching
+- **Congruence measurement noise**: Use multiple probe questions per profile, average scores
+- **Cost**: ~100 profiles × 5 questions × 2 models = ~1000 API calls. At ~$0.01/call ≈ $10
+- **Judge reliability**: Use structured scoring rubric, validate with examples
+
+## Success Criteria
+1. Clear evidence of non-uniform congruence (variance significantly above random)
+2. Identifiable low-rank structure (scree plot shows elbow)
+3. At least 2 interpretable dimensions
+4. Cross-model comparison completed with quantitative similarity metric
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          LITERATURE REVIEW
+════════════════════════════════════════════════════════════════════════════════
+
+# Literature Review: Mapping Person Space Through Simple Likes and Dislikes
+
+## Research Area Overview
+
+This research investigates whether the space of personas displayed by LLMs is low-rank and can be mapped by analyzing preference patterns (likes/dislikes). The literature converges from three directions: (1) **steering vector / representation engineering** showing personality traits exist as linear directions in LLM activation space, (2) **personalized alignment** showing user preferences have low-rank structure amenable to few-shot adaptation, and (3) **persona evaluation** showing LLMs can simulate personality traits but with important caveats about self-report vs. behavioral validity.
+
+---
+
+## Key Papers
+
+### 1. LoRe: Personalizing LLMs via Low-Rank Reward Modeling (Bose et al., 2025)
+- **arXiv:** 2504.14439
+- **Key Contribution:** Formalizes the assumption that the N×M user-preference matrix is low-rank (rank B &lt;&lt; min(N,M)) and decomposes it as P = WR, where R is a B×M reward basis and W is user-specific simplex weights.
+- **Methodology:** Joint training of shared reward basis R_φ and per-user weight vectors {w_i}. New users adapted via few-shot optimization over B-dimensional weight vector with frozen basis.
+- **Datasets:** PersonalLLM (synthetic, 10K prompts × 10 reward models), Reddit TLDR (real, 40 workers), PRISM (real, 1,500 participants from 75 countries).
+- **Results:** 93.8% accuracy on diverse preferences (vs 86.4% monolithic baseline). On PRISM with ~4 examples/user, LoRe is the only method maintaining performance on unseen users (71.0% vs. PAL&#39;s 59.0% unseen).
+- **Key Insight for Our Research:** Each user is a B-dimensional point on the simplex — this IS person space. Few-shot identification works with as few as 3-4 preference comparisons.
+
+### 2. Persona Vectors: Monitoring and Controlling Character Traits (Chen et al., 2025)
+- **arXiv:** 2507.21509
+- **Key Contribution:** Identifies single linear directions in activation space for personality traits (evil, sycophancy, hallucination). Demonstrates monitoring and preventative steering.
+- **Methodology:** Contrastive difference-in-means on residual stream activations. Automated pipeline generates prompts, extracts vectors, validates via steering and projection.
+- **Key Findings:** Projection onto persona vectors correlates r=0.75-0.83 with trait expression. Traits are correlated, not orthogonal — negative traits shift together. Cross-trait correlations (0.34-0.86) lower than same-trait (0.76-0.97).
+- **Open Questions (from paper):** &#34;How high-dimensional is persona space? Does there exist a natural &#39;persona basis&#39;?&#34; — directly our research question.
+
+### 3. Do Personality Traits Interfere? Geometric Limitations of Steering (Bhandari et al., 2026)
+- **arXiv:** 2602.15847
+- **Key Contribution:** Shows Big Five steering vectors are NOT orthogonal. Even hard orthonormalization doesn&#39;t eliminate behavioral cross-trait interference.
+- **Methodology:** Six conditioning schemes (C0-C5) applied to trait vectors in LLaMA-3-8B and Ministral-8B. Evaluation via GPT-4o-mini judge on BFI questionnaires.
+- **Key Findings:** A dominant &#34;social desirability&#34; axis exists — increasing any positive trait increases others and decreases Neuroticism. Geometric orthogonality ≠ behavioral independence (nonlinear mechanisms involved). C4 (soft projection, β=0.5) offers best trade-off.
+- **Relevance:** Person space may have fewer effective dimensions than Big Five suggests. The entanglement pattern implies a lower-dimensional latent structure.
+
+### 4. PERSONA: Dynamic and Compositional Inference-Time Personality Control (Feng et al., 2026)
+- **arXiv:** 2602.15669
+- **Key Contribution:** Training-free personality control via activation vector algebra. Shows vectors support scalar multiplication (linear intensity control, r&gt;0.9) and addition (multi-trait composition).
+- **Methodology:** Contrastive activation extraction for 10 Big Five poles. PERSONA-FLOW predicts steering coefficients per turn.
+- **Key Findings:** Opposing traits have strong negative cosine similarity (-0.85). Cross-dimensional correlations small but non-zero. Compositionality works — vector addition produces predictable multi-trait profiles. Matches SFT upper bound (9.60 vs 9.61 on PersonalityBench).
+- **Relevance:** Person space has algebraic structure — if likes/dislikes map onto activation directions, they too should compose.
+
+### 5. Personas within Parameters: Low-Rank Adapters for User Behaviors (Thakur et al., 2024)
+- **arXiv:** 2509.09689
+- **Key Contribution:** Uses LoRA adapters to capture user persona clusters from likes/dislikes data.
+- **Methodology:** GPT-4o distills user-item interactions into textual profiles. KMeans++ clusters users into K=4 personas. Per-persona LoRA (rank 256) fine-tuned on Phi-3-Mini.
+- **Datasets:** MovieLens-1M (200 users, 100-200 interactions each).
+- **Key Findings:** Persona-level LoRA beats full LLaMA-3-8B baseline. Clusters are semantically interpretable (genre preferences). Low-rank adapters suffice to capture user behavioral variation.
+- **Relevance:** Direct evidence that likes/dislikes produce meaningful, low-rank person clusters.
+
+### 6. The Personality Illusion (Han et al., 2025)
+- **arXiv:** 2509.03730
+- **Key Contribution:** Self-reported personality traits do NOT reliably predict LLM behavior (~24% of trait-task associations significant). Persona injection steers self-reports but not actual behavior.
+- **Relevance:** Critical caution — mapping person space requires behavioral validation, not just questionnaire-based measurement.
+
+### 7. PersonalLLM: Tailoring LLMs to Individual Preferences (Zollo et al., 2024)
+- **arXiv:** 2409.20296
+- **Key Contribution:** Benchmark with 10K prompts × 8 responses × 10 reward models simulating diverse users. Persona prompting produces preferences only half as diverse as real user base.
+- **Relevance:** Establishes that high-level persona descriptions are insufficient for preference diversity — finer-grained mapping (likes/dislikes) is needed.
+
+### 8. Prompts to Proxies: Preference Reconstruction (Wang et al., 2026)
+- **arXiv:** 2509.11311
+- **Key Contribution:** Formalizes preference reconstruction as representation learning. L1-regularized regression selects compact LLM ensemble matching target population.
+- **Relevance:** Population preference distributions can be spanned by finite LLM agent basis — another validation of low-rank preference space.
+
+### 9. AlignX: Scaling Personalized Preference (Li et al., 2025)
+- **arXiv:** 2503.15463
+- **Key Contribution:** 90-dimensional preference space grounded in psychology. AlignX dataset with 1.3M examples. 17% accuracy gain over baselines.
+- **Relevance:** Most concrete implementation of &#34;person space&#34; with explicit dimensional structure.
+
+### 10. Few-shot Steerable Alignment (Kobalczyk et al., 2024)
+- **arXiv:** 2412.13998
+- **Key Contribution:** Neural Processes for amortized inference of user-specific latent variables from few-shot preferences. NP-DPO enables inference-time adaptation.
+- **Relevance:** Shows user position in preference space can be inferred from minimal data.
+
+### 11. Personality Sliders (Hoppe et al., 2026)
+- **arXiv:** 2603.03326
+- **Key Contribution:** Sequential Adaptive Steering orthogonalizes steering vectors by training each on residual shifted by prior interventions. Achieves Pareto dominance on trait accuracy vs perplexity.
+
+### 12. Provable Multi-Party RLHF (Zhong et al., 2024)
+- **arXiv:** 2403.05006
+- **Key Contribution:** Proves single reward function provably fails for heterogeneous preferences. Shared representation + individual rewards structure.
+
+---
+
+## Common Methodologies
+
+1. **Contrastive Activation Extraction:** Used in Persona Vectors, PERSONA, CAA, Personality Sliders — generate responses under positive/negative prompts, compute mean difference in residual stream activations. (Papers 2, 4, 11)
+2. **Low-Rank Preference Decomposition:** User-preference matrix factored as P=WR with low-rank B. (Papers 1, 5, 8)
+3. **Big Five Personality Framework:** OCEAN traits as standard basis for personality evaluation. (Papers 3, 4, 6, 11)
+4. **Few-Shot Adaptation:** Learning user-specific parameters from minimal preference data. (Papers 1, 10)
+
+## Standard Baselines
+- **Monolithic Reward Model (BT):** Single Bradley-Terry model, no personalization
+- **VPL (Variational Preference Learning):** High-dimensional latent user codes
+- **PAL (Pluralistic Alignment):** Prototype ideal points with distance-based reward
+- **Contrastive Activation Addition (CAA):** Standard steering vector baseline
+
+## Evaluation Metrics
+- **Preference prediction accuracy:** Pairwise comparison accuracy on held-out data
+- **BFI-44 scores:** Big Five Inventory questionnaire for personality measurement
+- **Trait expression score (0-100):** LLM-judge rated trait intensity
+- **MMLU accuracy:** General capability preservation
+- **Cosine similarity:** Geometric relationship between steering vectors
+
+## Datasets in the Literature
+- **PRISM:** 1,500 participants, 75 countries, 8,011 conversations, 21 LLMs (Papers 1, 9)
+- **PersonalLLM:** 10K prompts × 8 responses × 10 reward models (Papers 1, 7)
+- **AlignX:** 1.3M examples, 90-dimensional preference space (Paper 9)
+- **MovieLens-1M:** Classic user-item preference data (Paper 5)
+- **Anthropic Persona Dataset:** Persona elicitation benchmarks (Perez et al., 2022)
+
+## Gaps and Opportunities
+
+1. **No study directly maps &#34;person space&#34; through simple likes/dislikes of everyday items.** Most work uses either psychometric instruments (Big Five) or LLM response preferences. Simple preferences (favorite foods, hobbies, music) as a mapping signal are unexplored.
+2. **The effective dimensionality of person space is unknown.** Papers find entangled but manipulable directions, but systematic dimensionality analysis hasn&#39;t been done.
+3. **Cross-model consistency of person space is untested.** Do the same preference patterns feel incongruent across different LLMs? Are the same persona dimensions discoverable?
+4. **The relationship between preference-based and activation-based person space is unclear.** LoRe learns person space from preference data; PERSONA finds it in activations. Are these the same space?
+
+## Recommendations for Experiment
+
+- **Primary datasets:** PRISM (real user preferences with demographics) and PersonalLLM (controlled diverse preferences)
+- **Recommended baselines:** LoRe (low-rank reward), monolithic BT, persona prompting
+- **Recommended metrics:** Preference prediction accuracy, effective dimensionality (eigenvalue analysis), cross-model correlation of person-space structure
+- **Key tools:** repeng/CAA for steering vector extraction, PRISM codebase for data loading
+- **Methodological approach:** (1) Collect LLM responses to like/dislike probes, (2) extract activation representations, (3) analyze dimensionality via PCA/SVD, (4) test whether low-rank structure predicts held-out preferences, (5) compare across LLMs
+
+
+════════════════════════════════════════════════════════════════════════════════
+                          PAPER REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+Generate a complete academic paper with the following structure:
+
+1. TITLE
+   - Clear, specific, informative
+   - Should convey main finding or contribution
+
+2. AUTHOR
+   - Use this exact author line in the \author{} block: Ari Holtzman and NeuriCo
+
+3. ABSTRACT (150-250 words)
+   - Problem statement
+   - Approach
+   - Key results
+   - Significance
+
+4. INTRODUCTION
+   - Research problem and motivation
+   - Gap in existing work
+   - Our contribution (be specific)
+   - Paper organization
+
+5. RELATED WORK
+   - Organized by theme/approach
+   - Position our work relative to prior work
+   - Cite papers from literature review
+
+6. METHODOLOGY
+   - Clear description of approach
+   - Experimental setup
+   - Datasets used
+   - Evaluation metrics
+   - Baselines
+
+7. RESULTS
+   - Present results with tables and figures
+   - Statistical analysis
+   - Comparison to baselines
+   - Ablation studies (if applicable)
+
+8. DISCUSSION
+   - Interpretation of results
+   - Limitations
+   - Broader implications
+
+9. CONCLUSION
+   - Summary of contributions
+   - Key findings
+   - Future work
+
+10. REFERENCES
+   - BibTeX format
+   - All cited papers
+
+════════════════════════════════════════════════════════════════════════════════
+                          OUTPUT FORMAT
+════════════════════════════════════════════════════════════════════════════════
+
+Create a MODULAR LaTeX project with the following directory structure:
+
+paper_draft/
+├── main.tex              # Main file that imports all sections
+├── references.bib        # BibTeX references
+├── sections/
+│   ├── abstract.tex      # Abstract content
+│   ├── introduction.tex  # Introduction section
+│   ├── related_work.tex  # Related work section
+│   ├── methodology.tex   # Methodology section
+│   ├── results.tex       # Results section
+│   ├── discussion.tex    # Discussion section
+│   └── conclusion.tex    # Conclusion section
+├── figures/              # Directory for any generated figures
+├── tables/               # Directory for complex standalone tables
+└── appendix/             # Directory for appendix sections (if needed)
+
+INSTRUCTIONS:
+1. First, create the directory structure above (mkdir -p paper_draft/sections paper_draft/figures paper_draft/tables paper_draft/appendix)
+2. Write main.tex using the EXACT preamble for NEURIPS:
+
+   \documentclass{article}
+   \usepackage[final]{neurips_2025}  % NEURIPS style (neurips_2025.sty is in paper_draft/)
+   \usepackage[hidelinks]{hyperref}  % REQUIRED: clickable links
+   \usepackage{booktabs}  % REQUIRED: professional tables
+   \usepackage{graphicx}
+   \usepackage{amsmath,amssymb}
+
+   % Import command files
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+   % Use this bibliography style:
+   \bibliographystyle{plainnat}
+
+   \author{Ari Holtzman and NeuriCo}
+
+   - Use \input{sections/...} to include each section
+   - Use \bibliography{references} for references
+3. Write each section file with COMPLETE content (no placeholders)
+4. Each section file should include its \section{} command
+5. Write references.bib with all citations in BibTeX format
+6. After writing all files, compile the paper:
+   cd paper_draft && pdflatex -interaction=nonstopmode main.tex && bibtex main && pdflatex -interaction=nonstopmode main.tex && pdflatex -interaction=nonstopmode main.tex
+
+This modular structure allows humans to easily:
+- Edit individual sections without navigating a large file
+- Track changes per section
+- Reuse sections across different paper versions
+
+════════════════════════════════════════════════════════════════════════════════
+                          QUALITY REQUIREMENTS
+════════════════════════════════════════════════════════════════════════════════
+
+- Academic tone throughout
+- All claims must be supported by data from the experiment report
+- Proper citations using \cite{} commands
+- Clear figures and tables with proper captions
+- NO placeholder text - every section must have real content
+- The paper MUST compile without errors
+- If compilation fails, debug and fix the LaTeX errors
+
+════════════════════════════════════════════════════════════════════════════════
+                          LAB WRITING STYLE
+════════════════════════════════════════════════════════════════════════════════
+
+Follow these lab-specific conventions to match our paper style:
+
+1. LANGUAGE STYLE:
+   - Use active voice: "We propose", "We examine", "We focus on"
+   - Be direct and confident: "Our main question is...", "We hypothesize that..."
+   - State things clearly and simply - prefer plain language over jargon
+   - Use bold questions as paragraph organizers: {\bf what is X?}
+   - Include specific quantitative claims: "8.97% over baseline"
+   - Avoid fancy wording: "utilize" → "use", "facilitate" → "help"
+
+2. INTRODUCTION STRUCTURE:
+   - Engaging hook (get to the point quickly)
+   - Problem importance
+   - Gap identification
+   - Your approach with method figure reference
+   - Quantitative preview of results
+   - Contribution bullets (3-4 items, action verbs)
+
+3. CONTRIBUTION LISTS:
+   \begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+       \item We propose...
+       \item We conduct...
+       \item We complement...
+   \end{itemize}
+
+4. MODULAR COMMANDS STRUCTURE:
+   Command templates are pre-copied to paper_draft/commands/:
+   - math.tex: Math notation macros
+   - general.tex: Formatting macros
+   - macros.tex: Project-specific term definitions (customize this for your paper)
+
+   In main.tex, include:
+   \input{commands/math}
+   \input{commands/general}
+   \input{commands/macros}
+
+5. REFERENCE CONVENTIONS:
+   Use reference macros from math.tex:
+   - \figref{fig:name} for "figure 1" (lowercase, in-sentence)
+   - \Figref{fig:name} for "Figure 1" (capitalized, start of sentence)
+   - \secref{sec:name} for "section 2"
+
+6. TEXT FORMATTING:
+   - Use \para{Header text} for bold paragraph headers
+   - Define method/dataset names with \textsc and \xspace:
+     \newcommand{\methodname}{\textsc{MethodName}\xspace}
+
+7. TABLE FORMATTING:
+   - Use booktabs package (no vertical lines)
+   - Use \resizebox{\textwidth}{!}{...} for wide tables
+   - Use @{} to remove padding at table edges
+   - Use \cmidrule(lr){x-y} for sub-headers
+   - Use \textsc{} for dataset/method names in headers
+   - Bold best results with {\bf ...}
+
+8. FIGURE FORMATTING:
+   - Use 0.32\textwidth for 3-column subfigures
+   - Use 0.95\linewidth for full-width figures
+   - Use \input{figures/legend} for shared legends
+   - Write self-contained captions explaining key observations
+
+9. RESULTS PRESENTATION:
+   - Define \increase and \decrease for colored arrows (green up, red down)
+   - Bold best results in tables
+   - Report confidence intervals when available
+
+10. ALGORITHM STYLING:
+    - Use algpseudocode with [noend]
+    - Use \triangleright for comments
+
+11. HYPERLINKS (REQUIRED):
+    - Always use \usepackage[hidelinks]{hyperref} or with colored links
+    - All citations, section refs, figure refs, table refs must be clickable
+    - This is essential for reader navigation
+
+════════════════════════════════════════════════════════════════════════════════
+                          WORKFLOW: REVIEW AND REFLECT
+════════════════════════════════════════════════════════════════════════════════
+
+Before calling finish, you MUST complete these review steps:
+
+1. REVIEW RESOURCES (at the start):
+   - Read .claude/skills/paper-writer/SKILL.md for detailed guidance
+   - Study templates/paper_writing/lab_style_guide.md for style conventions
+   - Browse paper_examples/ for formatting and language patterns
+
+2. SELF-REFLECTION (before finishing):
+   After writing all sections, review your work against these criteria:
+
+   LANGUAGE CHECK:
+   - [ ] Is the writing clear and jargon-free?
+   - [ ] Are claims specific with quantitative support?
+   - [ ] Is active voice used throughout?
+
+   FORMATTING CHECK:
+   - [ ] Does main.tex include \input{commands/math}, \input{commands/general}, \input{commands/macros}?
+   - [ ] Is hyperref package included for clickable references?
+   - [ ] Do tables use booktabs (no vertical lines)?
+   - [ ] Are best results bolded in tables?
+   - [ ] Are figures/tables properly captioned?
+
+   STRUCTURE CHECK:
+   - [ ] Does introduction follow: hook → importance → gap → approach → preview → contributions?
+   - [ ] Are contribution bullets specific with action verbs?
+   - [ ] Does the paper compile without errors?
+
+3. FIX ISSUES:
+   - Address any issues found in the self-reflection
+   - Re-compile and verify the PDF looks correct
+
+Only after completing this review should you consider the paper finished.

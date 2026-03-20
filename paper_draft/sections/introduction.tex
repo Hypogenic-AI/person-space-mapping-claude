@@ -1,0 +1,33 @@
+\section{Introduction}
+\label{sec:intro}
+
+When asked to role-play a person who loves hiking but dislikes spicy food, an LLM readily obliges.
+But when the assigned preferences become internally contradictory---say, loving large social gatherings while dreading public speaking---the performance degrades.
+This simple observation implies that LLMs carry an implicit model of which human preferences belong together: a \emph{person space} that constrains how they adopt and maintain personas.
+
+Understanding the geometry of person space matters for three reasons.
+First, if this space is low-rank, a user's full preference profile can be captured from a handful of observations, enabling efficient personalization~\citep{bose2025lore, kobalczyk2024fewshot}.
+Second, the structure of person space reveals biases in how LLMs represent personality types---which ``kinds of people'' feel natural to the model and which do not~\citep{zollo2024personalllm}.
+Third, knowing where persona adoption breaks down helps predict failure modes in applications that rely on consistent role-play, from tutoring systems to dialogue agents~\citep{thakur2024personas}.
+
+Prior work has approached persona structure from two directions.
+Representation-level studies extract steering vectors for personality traits and find them entangled and non-orthogonal~\citep{chen2025persona, bhandari2026personality, feng2026persona}.
+Preference-level studies decompose user reward matrices and find low-rank structure amenable to few-shot adaptation~\citep{bose2025lore, li2025alignx}.
+However, no study has mapped person space using purely behavioral probes---measuring which combinations of everyday likes and dislikes an LLM can coherently maintain, without requiring access to model internals.
+
+We propose a simple methodology to fill this gap.
+We define \nprefs{} preference items across \ndomains{} everyday domains (\eg food, music, social style, values) and generate \nprofiles{} persona profiles, each containing 8 randomly selected preferences with random polarity.
+For each profile, we instruct the LLM to adopt the persona, probe it with 5 follow-up questions, and measure behavioral congruence---how consistently the model's responses reflect the assigned preferences.
+We then build a $\nprefs \times \nprefs$ preference co-occurrence matrix and analyze its dimensionality via SVD.
+
+Our experiments on \nano and \mini yield three key findings.
+Person space has approximately \effrank{} effective dimensions out of \nprefs{} possible, a 65\% reduction that is statistically significant against random baselines ($p < 0.001$).
+The top-5 principal components are partially interpretable, distinguishing persona types such as ``outgoing intellectual'' from ``homebody consumer.''
+Most notably, person-space structure is remarkably consistent across model sizes: the co-occurrence matrices correlate at $r = 0.96$, with the top-5 components matching one-to-one at $r > 0.90$.
+
+We make the following contributions:
+\begin{itemize}[leftmargin=*,itemsep=0pt,topsep=0pt]
+    \item We introduce a behavioral probing methodology for mapping person space that works across any LLM via API, without requiring model internals.
+    \item We demonstrate that LLM person space is significantly low-rank (\effrank{} of \nprefs{} dimensions), with structure that is consistent across model sizes ($r = 0.96$ co-occurrence correlation).
+    \item We provide a publicly available dataset of \nprofiles{} persona profiles with congruence scores, enabling further study of persona structure in LLMs.
+\end{itemize}

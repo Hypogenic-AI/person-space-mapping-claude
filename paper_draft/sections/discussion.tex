@@ -1,0 +1,49 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\para{Person space is low-rank and shared.}
+Our central finding is that LLM person space has approximately \effrank{} effective dimensions---roughly one-third of the full preference space---and that this structure is nearly identical across model sizes ($r = 0.96$).
+This suggests that the implicit model of ``which preferences go together'' is not an artifact of a particular model's capacity or training details, but a robust feature of the training data distribution itself.
+The high cross-model consistency ($r > 0.90$ for all top-5 components) is particularly striking given that \nano and \mini differ substantially in parameter count and capability.
+
+\para{Relationship to activation-level findings.}
+\citet{chen2025persona} and \citet{bhandari2026personality} find entangled, non-orthogonal personality directions in activation space, with a dominant ``social desirability'' axis.
+Our Component~1 (outgoing intellectual vs.\ homebody consumer) may reflect a behavioral analog of this axis.
+The partial interpretability of our components---they capture real structure but do not map cleanly onto Big Five---mirrors the geometric findings of \citet{bhandari2026personality}, who show that behavioral independence cannot be achieved even after geometric orthogonalization.
+A direct comparison between behavioral and activation-level dimensionality remains an important open question.
+
+\para{Implications for personalization.}
+If person space is truly \effrank-dimensional, then a user's full preference profile can in principle be inferred from a small number of observations.
+This connects to the few-shot adaptation results of \citet{bose2025lore}, who show that 3--4 preference comparisons suffice to locate a user in reward space.
+Our findings suggest that similar efficiency should hold for behavioral personalization: the low-rank structure means that preferences are highly predictable from a compact set of dimensions.
+
+\para{Implications for alignment and safety.}
+The shared person-space structure implies that LLMs have strong priors about what constitutes a ``coherent person.''
+Profiles that violate this structure---those far from the low-dimensional manifold---produce inconsistent behavior, which could be exploited or could cause unexpected failures in applications relying on consistent persona maintenance.
+Understanding these constraints helps predict where persona-based safety measures (\eg ``act as a helpful, harmless assistant'') may break down.
+
+\subsection{Limitations}
+\label{sec:limitations}
+
+\para{Self-evaluation bias.}
+Both congruence scoring and coherence rating use models from the same family (GPT-4.1) as the persona-adopting models.
+This may inflate scores and reduce measured variance compared to cross-family evaluation.
+Future work should use independent judges (\eg human raters or models from different families) to validate our measurements.
+
+\para{Limited model diversity.}
+We test only two models from the same provider (OpenAI).
+While the high cross-model correlation is encouraging, testing models from different families (Claude, Gemini, open-source models) is needed to determine whether the $r = 0.96$ structural similarity reflects shared training data, shared architecture, or a more universal feature of language modeling.
+
+\para{Sparse profile-preference matrix.}
+With \nprofiles{} profiles of 8 items each drawn from \nprefs{} possibilities, the profile-preference matrix is 87\% zeros.
+Our analysis focuses on the denser co-occurrence matrix, but richer coverage (more profiles or more items per profile) would improve estimates of pairwise interactions.
+
+\para{Preference item validity.}
+Our \nprefs{} items, while diverse, are not drawn from validated psychological instruments.
+Different item sets could yield different effective dimensionalities.
+Future work should compare our approach with established instruments (\eg items derived from Big Five facets or the HEXACO model) to calibrate the discovered dimensions.
+
+\para{Scoring noise.}
+Using an LLM to score congruence introduces systematic biases.
+Temperature 0.7 in persona responses adds stochastic variation.
+Multiple independent runs per profile and human evaluation of a subset would strengthen reliability.
